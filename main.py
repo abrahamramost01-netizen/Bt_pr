@@ -17,12 +17,24 @@ def post_to_facebook_groups(content: str):
         print("ERROR: No hay cookies configuradas.")
         return
 
-    cookies = json.loads(FB_COOKIES_JSON)
+    # Validar cookies antes de usarlas
+    try:
+        cookies = json.loads(FB_COOKIES_JSON)
+        print("Cookies cargadas correctamente. Primera cookie:", cookies[0])
+    except Exception as e:
+        print("Error al parsear FB_COOKIES_JSON:", e)
+        return
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
-        context.add_cookies(cookies)
+        try:
+            context.add_cookies(cookies)
+        except Exception as e:
+            print("Error al añadir cookies:", e)
+            browser.close()
+            return
+
         page = context.new_page()
 
         for group_url in FB_GROUP_URLS:
@@ -76,3 +88,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
