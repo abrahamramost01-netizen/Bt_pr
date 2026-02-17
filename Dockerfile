@@ -1,6 +1,5 @@
 FROM python:3.10-slim
 
-# Instalar dependencias necesarias para Chromium
 RUN apt-get update && apt-get install -y \
     wget \
     libnss3 \
@@ -15,13 +14,15 @@ RUN apt-get update && apt-get install -y \
     libasound2 \
     libxshmfence1 \
     libxdamage1 \
+    libxfixes3 \
+    libxrender1 \
+    libxi6 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-# Descargar Chromium para Playwright
 RUN playwright install chromium
 
 COPY . .
