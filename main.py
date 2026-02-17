@@ -16,29 +16,37 @@ FB_GROUP_URLS = os.getenv("FB_GROUP_URLS", "").split(",")
 
 def extract_post_url(page, group_url):
     try:
-        page.wait_for_timeout(4000)
+        # Esperar más tiempo para que Facebook renderice el post
+        page.wait_for_timeout(6000)
 
-        post_element = page.query_selector("div[data-ft]")
-        if not post_element:
-            print("No se encontró el post recién creado.")
-            return None
+        # Buscar cualquier contenedor de post reciente
+        candidates = page.query_selector_all("div[data-ft]")
 
-        data_ft = post_element.get_attribute("data-ft")
-        if not data_ft:
-            return None
+        if not candidates:
+            print("No se encontraron contenedores de post.")
+            return "El post fue enviado, pero está pendiente de aprobación o Facebook no devolvió el ID."
 
-        data = json.loads(data_ft)
-        story_id = data.get("mf_story_key")
+        for c in candidates:
+            data_ft = c.get_attribute("data-ft")
+            if not data_ft:
+                continue
 
-        if not story_id:
-            return None
+            try:
+                data = json.loads(data_ft)
+            except:
+                continue
 
-        group_id = group_url.split("/")[-1]
-        return f"https://www.facebook.com/groups/{group_id}/posts/{story_id}/"
+            story_id = data.get("mf_story_key")
+            if story_id:
+                group_id = group_url.split("/")[-1]
+                return f"https://www.facebook.com/groups/{group_id}/posts/{story_id}/"
+
+        return "El post fue enviado, pero Facebook no devolvió el ID (posible aprobación pendiente)."
 
     except Exception as e:
         print("Error extrayendo URL del post:", e)
-        return None
+        return "El post fue enviado, pero no se pudo obtener el enlace."
+
 
 
 def post_to_facebook_groups(content: str):
@@ -128,3 +136,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
