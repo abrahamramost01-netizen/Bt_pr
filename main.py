@@ -1,5 +1,4 @@
 import os
-import json
 from dotenv import load_dotenv
 from telegram.ext import Updater, MessageHandler, Filters
 from playwright.sync_api import sync_playwright
@@ -7,36 +6,28 @@ from playwright.sync_api import sync_playwright
 load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-PORT = int(os.getenv("PORT", "8080"))  # Railway usa 8080
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # tu dominio Railway
+PORT = int(os.getenv("PORT", "8080"))
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+
+# Credenciales de Facebook (ponlas en Railway como variables de entorno)
+FB_EMAIL = os.getenv("FB_EMAIL")
+FB_PASSWORD = os.getenv("FB_PASSWORD")
 FB_GROUP_URLS = os.getenv("FB_GROUP_URLS", "").split(",")
-FB_COOKIES_JSON = os.getenv("FB_COOKIES_JSON", "")
 
 def post_to_facebook_groups(content: str):
-    if not FB_COOKIES_JSON:
-        print("ERROR: No hay cookies configuradas.")
-        return
-
-    # Validar cookies antes de usarlas
-    try:
-        cookies = json.loads(FB_COOKIES_JSON)
-        print("Cookies cargadas correctamente. Primera cookie:", cookies[0])
-    except Exception as e:
-        print("Error al parsear FB_COOKIES_JSON:", e)
-        return
-
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
-        try:
-            context.add_cookies(cookies)
-        except Exception as e:
-            print("Error al añadir cookies:", e)
-            browser.close()
-            return
-
         page = context.new_page()
 
+        # Login automático
+        page.goto("https://www.facebook.com/login", wait_until="networkidle")
+        page.fill("#email", FB_EMAIL)
+        page.fill("#pass", FB_PASSWORD)
+        page.click("button[name='login']")
+        page.wait_for_timeout(5000)  # esperar a que cargue la sesión
+
+        # Publicar en los grupos
         for group_url in FB_GROUP_URLS:
             group_url = group_url.strip()
             if not group_url:
@@ -88,4 +79,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
